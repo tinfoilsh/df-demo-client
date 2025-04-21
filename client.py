@@ -18,6 +18,7 @@ import base64
 import json
 from PIL import ImageGrab, Image
 from datetime import datetime
+from tinfoil import NewSecureClient
 
 # Global variables
 detection_active = False
@@ -73,13 +74,18 @@ def analyze_frame(frame):
         if encoded_image is None:
             return {"error": "Failed to encode image"}
 
+        tfclient = NewSecureClient(
+            enclave="df-demo.model.tinfoil.sh",
+            repo="tinfoilsh/confidential-df-demo",
+        )
+
         # Prepare the request
         url = f"{server_url}/analyze"
         payload = json.dumps({"image": encoded_image})
         headers = {"Content-Type": "application/json"}
 
         # Send the request to the server
-        response = requests.post(url, headers=headers, data=payload, timeout=30)
+        response = tfclient.post(url, headers=headers, data=payload, timeout=30)
 
         # Check if the request was successful
         if response.status_code == 200:
@@ -103,7 +109,11 @@ def check_server_health():
     """
     try:
         print(f"Checking server health at {server_url}/health...")
-        response = requests.get(f"{server_url}/health", timeout=5)
+        tfclient = NewSecureClient(
+            enclave="df-demo.model.tinfoil.sh",
+            repo="tinfoilsh/confidential-df-demo",
+        )
+        response = tfclient.get(f"{server_url}/health", timeout=5)
         if response.status_code == 200:
             health_data = response.json()
             if health_data.get("status") == "healthy" and health_data.get(
